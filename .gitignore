@@ -1,0 +1,5 @@
+.env
+.env.local
+volumes/
+*.log
+.terraform/
