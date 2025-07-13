@@ -1,0 +1,75 @@
+name: OP Stack Infrastructure CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate-infrastructure:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.27.3'
+
+    - name: Validate Kubernetes manifests
+      run: |
+        echo "🔍 Validating Kubernetes manifests..."
+        kubectl apply --dry-run=client -f infrastructure/kubernetes/
+        echo "✅ Kubernetes manifests are valid"
+
+    - name: Check for security issues
+      run: |
+        echo "🔒 Checking for security issues..."
+        if grep -r "password\|secret\|key" infrastructure/kubernetes/ --exclude="*.md" | grep -v "example"; then
+          echo "⚠️  Warning: Potential secrets found"
+        fi
+        echo "✅ Security check completed"
+
+  test-kubernetes-deployment:
+    name: Test K8s Deployment
+    runs-on: ubuntu-latest
+    needs: validate-infrastructure
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create kind cluster
+      uses: helm/kind-action@v1.8.0
+      with:
+        cluster_name: test-cluster
+
+    - name: Deploy OP Stack to test cluster
+      run: |
+        echo "🚀 Deploying OP Stack to test cluster..."
+        cd infrastructure/kubernetes
+        kubectl apply -f namespace.yaml
+        kubectl apply -f l1-ethereum.yaml
+        echo "⏳ Waiting for L1 to be ready..."
+        kubectl wait --for=condition=Ready pod -l app=l1-ethereum -n op-stack --timeout=180s
+        echo "✅ Deployment successful"
+
+    - name: Test RPC endpoints
+      run: |
+        echo "🔍 Testing RPC endpoints..."
+        kubectl port-forward -n op-stack svc/l1-ethereum-service 8545:8545 &
+        PF_PID=$!
+        sleep 15
+        response=$(curl -s -X POST -H "Content-Type: application/json" \
+          --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+          http://localhost:8545 || echo "failed")
+        kill $PF_PID 2>/dev/null || true
+        if [[ "$response" == *"result"* ]]; then
+          echo "✅ L1 RPC is responding correctly"
+        else
+          echo "❌ RPC test failed"
+          exit 1
+        fi
