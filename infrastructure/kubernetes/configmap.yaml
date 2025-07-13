@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: op-stack-config
+  namespace: op-stack
+data:
+  l1_rpc_url: "http://l1-ethereum-service:8545"
+  l2_rpc_url: "http://l2-opstack-service:8545"
+  network_id: "901"
+  block_time: "2"
+  environment: "development"
