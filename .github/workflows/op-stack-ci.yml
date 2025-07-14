@@ -15,7 +15,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ADD KIND CLUSTER TO VALIDATION JOB (this was missing!)
     - name: Create kind cluster for validation
       uses: helm/kind-action@v1.8.0
       with:
@@ -64,17 +63,19 @@ jobs:
     - name: Validate YAML syntax
       run: |
         echo "📝 Validating YAML syntax..."
-        find infrastructure/kubernetes -name "*.yaml" -o -name "*.yml" | while read file; do
-          echo "Checking $file..."
-          python3 -c "
-          import yaml
-          try:
-              with open('$file', 'r') as f:
-                  yaml.safe_load(f)
-              print('✅ $file is valid')
-          except Exception as e:
-              print('❌ $file has errors:', str(e))
-              exit(1)
-          "
-        done
-        echo "✅ All YAML files are valid"
+        python3 -c "
+import yaml
+import os
+for root, dirs, files in os.walk('infrastructure/kubernetes'):
+    for file in files:
+        if file.endswith(('.yaml', '.yml')):
+            filepath = os.path.join(root, file)
+            try:
+                with open(filepath, 'r') as f:
+                    yaml.safe_load(f)
+                print(f'✅ {filepath}')
+            except Exception as e:
+                print(f'❌ {filepath}: {str(e)}')
+                exit(1)
+print('✅ All YAML files are valid')
+        "
