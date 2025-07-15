@@ -15,8 +15,11 @@ jobs:
     - name: Check PR title format
       run: |
         PR_TITLE="${{ github.event.pull_request.title }}"
-        if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|chore):.* ]]; then
-          echo "❌ PR title must start with: feat:, fix:, docs:, or chore:"
+        echo "Checking PR title: '$PR_TITLE'"
+        if [[ "$PR_TITLE" =~ ^(feat|fix|docs|chore|test):.* ]]; then
+          echo "✅ PR title follows convention"
+        else
+          echo "❌ PR title must start with: feat:, fix:, docs:, chore:, or test:"
+          echo "Current title: $PR_TITLE"
           exit 1
         fi
-        echo "✅ PR title follows convention"

@@ -4,4 +4,3 @@ metadata:
   name: op-stack
   labels:
     name: op-stack
-    purpose: blockchain-infrastructure
