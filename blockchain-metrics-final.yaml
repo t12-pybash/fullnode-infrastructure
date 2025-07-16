@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blockchain-metrics-final
+  namespace: op-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blockchain-metrics-final
+  template:
+    metadata:
+      labels:
+        app: blockchain-metrics-final
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: exporter
+        image: python:3.9-slim
+        ports:
+        - containerPort: 8000
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        command: ["python", "-c"]
+        args:
+        - |
+          import subprocess
+          import sys
+          
+          # Install required packages
+          subprocess.check_call([sys.executable, "-m", "pip", "install", "requests", "prometheus_client"])
+          
+          import requests
+          import time
+          from prometheus_client import start_http_server, Gauge, Counter
+          import threading
+          
+          # Prometheus metrics
+          block_height_gauge = Gauge('blockchain_block_height', 'Current blockchain block height', ['chain'])
+          rpc_requests_total = Counter('blockchain_rpc_requests_total', 'Total RPC requests', ['chain', 'status'])
+          
+          def collect_blockchain_metrics():
+              endpoints = {
+                  'l1-ethereum': 'http://l1-ethereum-service:8545',
+                  'l2-opstack': 'http://l2-opstack-service:8545'
+              }
+              
+              while True:
+                  for chain, endpoint in endpoints.items():
+                      try:
+                          payload = {
+                              "jsonrpc": "2.0",
+                              "method": "eth_blockNumber", 
+                              "params": [],
+                              "id": 1
+                          }
+                          
+                          response = requests.post(endpoint, json=payload, timeout=10)
+                          
+                          if response.status_code == 200:
+                              result = response.json()
+                              if 'result' in result:
+                                  height = int(result['result'], 16)
+                                  block_height_gauge.labels(chain=chain).set(height)
+                                  rpc_requests_total.labels(chain=chain, status='success').inc()
+                                  print(f"{chain}: Block {height}")
+                              else:
+                                  print(f"{chain}: No result in response")
+                                  rpc_requests_total.labels(chain=chain, status='error').inc()
+                          else:
+                              print(f"{chain}: HTTP {response.status_code}")
+                              rpc_requests_total.labels(chain=chain, status='error').inc()
+                              
+                      except Exception as e:
+                          print(f"{chain}: Error - {e}")
+                          rpc_requests_total.labels(chain=chain, status='error').inc()
+                  
+                  time.sleep(15)
+          
+          if __name__ == '__main__':
+              print("Starting blockchain metrics exporter on port 8000")
+              start_http_server(8000)
+              metrics_thread = threading.Thread(target=collect_blockchain_metrics)
+              metrics_thread.daemon = True
+              metrics_thread.start()
+              print("Blockchain metrics exporter started successfully")
+              
+              try:
+                  while True:
+                      time.sleep(60)
+              except KeyboardInterrupt:
+                  print("Shutting down...")
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blockchain-metrics-final-service
+  namespace: op-stack
+  labels:
+    app: blockchain-metrics-final
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+spec:
+  selector:
+    app: blockchain-metrics-final
+  ports:
+  - name: metrics
+    port: 8000
+    targetPort: 8000

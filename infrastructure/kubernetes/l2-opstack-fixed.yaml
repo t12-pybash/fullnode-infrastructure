@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: l2-opstack
+  namespace: op-stack
+spec:
+  serviceName: l2-opstack
+  replicas: 1
+  selector:
+    matchLabels:
+      app: l2-opstack
+  template:
+    metadata:
+      labels:
+        app: l2-opstack
+    spec:
+      containers:
+      - name: op-geth
+        image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth:optimism
+        args:
+          - --dev
+          - --http
+          - --http.addr=0.0.0.0
+          - --http.port=8545
+          - --http.api=eth,net,web3,debug
+          - --http.corsdomain=*
+          - --http.vhosts=*
+          - --allow-insecure-unlock
+          - --rpc.allow-unprotected-txs
+        ports:
+        - containerPort: 8545
+          name: rpc
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: l2-data
+          mountPath: /root/.ethereum
+  volumeClaimTemplates:
+  - metadata:
+      name: l2-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: l2-opstack-service
+  namespace: op-stack
+spec:
+  selector:
+    app: l2-opstack
+  ports:
+  - name: rpc
+    port: 8545
+    targetPort: 8545
+    nodePort: 30002
+  type: NodePort

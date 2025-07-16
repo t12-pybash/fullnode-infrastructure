@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: l1-ethereum
+  namespace: op-stack
+spec:
+  serviceName: l1-ethereum
+  replicas: 1
+  selector:
+    matchLabels:
+      app: l1-ethereum
+  template:
+    metadata:
+      labels:
+        app: l1-ethereum
+    spec:
+      containers:
+      - name: geth
+        image: ethereum/client-go:v1.13.15
+        args:
+          - --dev
+          - --http
+          - --http.addr=0.0.0.0
+          - --http.port=8545
+          - --http.api=eth,net,web3,debug
+          - --http.corsdomain=*
+          - --http.vhosts=*
+          - --allow-insecure-unlock
+          - --rpc.allow-unprotected-txs
+          - --dev.period=2
+        ports:
+        - containerPort: 8545
+          name: rpc
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: l1-data
+          mountPath: /root/.ethereum
+  volumeClaimTemplates:
+  - metadata:
+      name: l1-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: l1-ethereum-service
+  namespace: op-stack
+spec:
+  selector:
+    app: l1-ethereum
+  ports:
+  - name: rpc
+    port: 8545
+    targetPort: 8545
+    nodePort: 30001
+  type: NodePort
