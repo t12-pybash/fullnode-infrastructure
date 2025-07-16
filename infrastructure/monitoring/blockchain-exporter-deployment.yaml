@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blockchain-exporter
+  namespace: op-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blockchain-exporter
+  template:
+    metadata:
+      labels:
+        app: blockchain-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: blockchain-exporter
+        image: python:3.9-slim
+        ports:
+        - containerPort: 8080
+          name: metrics
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          pip install requests prometheus_client
+          cat > /app/exporter.py << 'SCRIPT_EOF'
+          import requests
+          import time
+          import json
+          from prometheus_client import start_http_server, Gauge, Counter
+          
+          block_height = Gauge('blockchain_block_height', 'Current block height', ['chain'])
+          rpc_requests = Counter('blockchain_rpc_requests_total', 'Total RPC requests', ['chain', 'status'])
+          
+          def get_block_height(endpoint, chain):
+              try:
+                  payload = {"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1}
+                  response = requests.post(endpoint, json=payload, timeout=5)
+                  rpc_requests.labels(chain=chain, status='success').inc()
+                  
+                  if response.status_code == 200:
+                      result = response.json()
+                      if 'result' in result:
+                          height = int(result['result'], 16)
+                          return height
+                  return None
+              except Exception as e:
+                  print(f"Error for {chain}: {e}")
+                  rpc_requests.labels(chain=chain, status='error').inc()
+                  return None
+          
+          def collect_metrics():
+              endpoints = {
+                  'l1-ethereum': 'http://l1-ethereum-service:8545',
+                  'l2-opstack': 'http://l2-opstack-service:8545'
+              }
+              
+              while True:
+                  for chain, endpoint in endpoints.items():
+                      height = get_block_height(endpoint, chain)
+                      if height is not None:
+                          block_height.labels(chain=chain).set(height)
+                          print(f"{chain}: block {height}")
+                  time.sleep(10)
+          
+          if __name__ == '__main__':
+              start_http_server(8080)
+              print("Blockchain metrics started on port 8080")
+              collect_metrics()
+          SCRIPT_EOF
+          python /app/exporter.py
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blockchain-exporter-service
+  namespace: op-stack
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  selector:
+    app: blockchain-exporter
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: 8080

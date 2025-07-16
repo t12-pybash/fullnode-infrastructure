@@ -1,0 +1,10 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+COPY blockchain-exporter.py .
+
+RUN pip install requests prometheus_client
+
+EXPOSE 8080
+
+CMD ["python", "blockchain-exporter.py"]
