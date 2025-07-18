@@ -42,3 +42,4 @@ Service discovery between components
 Health checks and monitoring ready
 Infrastructure as Code approach
 # Infrastructure Update Fri 18 Jul 2025 13:30:01 IST
+# AWS credentials properly configured Fri 18 Jul 2025 17:47:33 IST
