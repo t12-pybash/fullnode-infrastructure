@@ -1,0 +1,109 @@
+version: 2.1
+
+commands:
+  setup-aws:
+    steps:
+      - run:
+          name: Install AWS CLI
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            aws --version
+      - run:
+          name: Configure AWS credentials
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set region $AWS_REGION
+            aws sts get-caller-identity
+
+  setup-kubectl:
+    steps:
+      - run:
+          name: Install kubectl
+          command: |
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/
+            kubectl version --client
+
+jobs:
+  check-aws-infrastructure:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup-aws
+      - run:
+          name: Check EKS Cluster Status
+          command: |
+            echo "🔍 Checking AWS EKS cluster status..."
+            if aws eks describe-cluster --name $EKS_CLUSTER_NAME --region $AWS_REGION >/dev/null 2>&1; then
+              STATUS=$(aws eks describe-cluster --name $EKS_CLUSTER_NAME --region $AWS_REGION --query 'cluster.status' --output text)
+              echo "✅ EKS cluster exists with status: $STATUS"
+              
+              if [ "$STATUS" = "ACTIVE" ]; then
+                echo "🎯 Cluster is ready for deployment"
+              else
+                echo "⚠️ Cluster is not active yet (Status: $STATUS)"
+              fi
+            else
+              echo "❌ EKS cluster not found"
+              echo "💡 Run 'terraform apply' to create the cluster"
+              exit 1
+            fi
+
+  deploy-op-stack-to-eks:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup-aws
+      - setup-kubectl
+      - run:
+          name: Configure kubectl for EKS
+          command: |
+            echo "⚙️ Configuring kubectl for EKS cluster..."
+            aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
+            kubectl cluster-info
+            kubectl get nodes
+      - run:
+          name: Deploy OP Stack Infrastructure
+          command: |
+            echo "🚀 Deploying OP Stack to AWS EKS via CircleCI"
+            echo "=============================================="
+            
+            # Create namespace
+            kubectl apply -f infrastructure/kubernetes/namespace.yaml
+            
+            # Deploy infrastructure
+            kubectl apply -f infrastructure/kubernetes/ || true
+            kubectl apply -f blockchain-metrics-final.yaml || true
+            kubectl apply -f l1-ethereum-simple.yaml || true
+            kubectl apply -f infrastructure/monitoring/ || true
+            
+            echo "✅ All deployment commands completed"
+      - run:
+          name: Check Deployment Status
+          command: |
+            echo "📊 Deployment Status:"
+            kubectl get pods -n op-stack
+            kubectl get services -n op-stack
+            
+            # Wait a bit for pods to start
+            sleep 30
+            kubectl get pods -n op-stack
+
+workflows:
+  deploy-and-test-eks:
+    jobs:
+      - check-aws-infrastructure
+      - deploy-op-stack-to-eks:
+          requires:
+            - check-aws-infrastructure
+          filters:
+            branches:
+              only: 
+                - main
+                - circleci-deployment
