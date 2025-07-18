@@ -1,0 +1,44 @@
+version: 2.1
+
+jobs:
+  test-terraform:
+    docker:
+      - image: hashicorp/terraform:latest
+    steps:
+      - checkout
+      - run:
+          name: Terraform Validate
+          command: |
+            cd infrastructure/terraform/aws-eks
+            terraform init
+            terraform validate
+            terraform plan
+
+  test-kubernetes:
+    docker:
+      - image: bitnami/kubectl:latest
+    steps:
+      - checkout
+      - run:
+          name: Validate Kubernetes Manifests
+          command: |
+            kubectl --dry-run=client apply -f infrastructure/kubernetes/
+
+  lint-documentation:
+    docker:
+      - image: node:latest
+    steps:
+      - checkout
+      - run:
+          name: Install markdownlint
+          command: npm install -g markdownlint-cli2
+      - run:
+          name: Lint Markdown
+          command: markdownlint-cli2 "**/*.md"
+
+workflows:
+  infrastructure-pipeline:
+    jobs:
+      - test-terraform
+      - test-kubernetes
+      - lint-documentation
