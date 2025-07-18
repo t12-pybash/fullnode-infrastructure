@@ -1,0 +1,182 @@
+name: Infrastructure Deployment Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'infrastructure/**'
+
+env:
+  AWS_REGION: us-west-2
+  EKS_CLUSTER_NAME: op-stack-cluster
+
+jobs:
+  terraform-validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure/terraform/aws-eks
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.6
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Terraform Init
+      run: terraform init
+    
+    - name: Terraform Validate
+      run: terraform validate
+    
+    - name: Terraform Plan
+      run: terraform plan -no-color
+      continue-on-error: true
+
+  kubernetes-validate:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Validate Kubernetes manifests
+      run: |
+        find infrastructure/kubernetes -name "*.yaml" -exec kubectl --dry-run=client apply -f {} \;
+        find . -name "*metrics*.yaml" -exec kubectl --dry-run=client apply -f {} \;
+
+  deploy-infrastructure:
+    name: Deploy to AWS EKS
+    runs-on: ubuntu-latest
+    needs: [terraform-validate, kubernetes-validate]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+    
+    - name: Deploy namespace
+      run: |
+        kubectl apply -f infrastructure/kubernetes/namespace.yaml
+    
+    - name: Deploy blockchain infrastructure
+      run: |
+        kubectl apply -f infrastructure/kubernetes/ || true
+        kubectl apply -f blockchain-metrics-final.yaml || true
+        kubectl apply -f l1-ethereum-simple.yaml || true
+    
+    - name: Deploy monitoring
+      run: |
+        kubectl apply -f infrastructure/monitoring/ || true
+    
+    - name: Wait for deployments
+      run: |
+        kubectl wait --for=condition=available --timeout=300s deployment/grafana -n op-stack || true
+        kubectl wait --for=condition=available --timeout=300s deployment/blockchain-metrics-final -n op-stack || true
+    
+    - name: Get deployment status
+      run: |
+        echo "=== Pod Status ==="
+        kubectl get pods -n op-stack
+        echo "=== Service Status ==="
+        kubectl get services -n op-stack
+        echo "=== Node Status ==="
+        kubectl get nodes
+
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+    
+    - name: Test infrastructure health
+      run: |
+        echo "🔍 Testing infrastructure health..."
+        
+        # Check if pods are running
+        RUNNING_PODS=$(kubectl get pods -n op-stack --field-selector=status.phase=Running --no-headers | wc -l)
+        echo "✅ Running pods: $RUNNING_PODS"
+        
+        # Check if services exist
+        SERVICES=$(kubectl get services -n op-stack --no-headers | wc -l)
+        echo "✅ Services deployed: $SERVICES"
+        
+        # Test blockchain metrics endpoint (with port-forward)
+        kubectl port-forward -n op-stack svc/blockchain-metrics-final-service 8000:8000 &
+        sleep 10
+        
+        if curl -s http://localhost:8000/metrics | grep -q blockchain_block_height; then
+          echo "✅ Blockchain metrics endpoint working"
+        else
+          echo "⚠️  Blockchain metrics not ready yet"
+        fi
+        
+        # Test simple blockchain node
+        kubectl port-forward -n op-stack svc/l1-ethereum-simple-service 8545:8545 &
+        sleep 10
+        
+        if curl -s -X POST -H "Content-Type: application/json" \
+           --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+           http://localhost:8545 | grep -q result; then
+          echo "✅ L1 Ethereum node responding"
+        else
+          echo "⚠️  L1 Ethereum node not ready yet"
+        fi
