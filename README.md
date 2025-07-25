@@ -8,7 +8,7 @@ This repository demonstrates production-ready infrastructure environment for OP 
 ## 🚀 Quick Start
 ```bash
 git clone https://github.com/t12-pybash/fullnode-infrastructure
-cd op-stack-interview-prep
+cd op-stack-x-prep
 ./scripts/setup.sh
 
 ## 🚀 Kubernetes Deployment
