@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 def monitor_blockchains():
-    print("🚀 OP Stack Live Blockchain Monitor")
+    print(" OP Stack Live Blockchain Monitor")
     print("=" * 40)
     
     endpoints = {
@@ -14,7 +14,7 @@ def monitor_blockchains():
     
     try:
         while True:
-            print(f"\n📊 {datetime.now().strftime('%H:%M:%S')} - Block Heights:")
+            print(f"\n {datetime.now().strftime('%H:%M:%S')} - Block Heights:")
             print("-" * 35)
             
             for name, url in endpoints.items():
@@ -35,7 +35,7 @@ def monitor_blockchains():
             
             time.sleep(5)
     except KeyboardInterrupt:
-        print("\n\n✅ Monitoring stopped")
+        print("\n\n Monitoring stopped")
 
 if __name__ == '__main__':
     monitor_blockchains()
