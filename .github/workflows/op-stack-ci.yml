@@ -78,4 +78,4 @@ for root, dirs, files in os.walk('infrastructure/kubernetes'):
                 print(f'{filepath}: {str(e)}')
                 exit(1)
 print('All YAML files are valid')
-        "
+"
