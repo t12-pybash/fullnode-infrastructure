@@ -3,7 +3,7 @@
 > Infrastructure automation and operational excellence for the Optimism ecosystem
 
 ## Overview
-This repository demonstrates production-ready infrastructure environment for OP Stack deployment, monitoring, and operations.
+production-ready infrastructure environment for OP Stack deployment, monitoring, and operations.
 
 ## Quick Start
 ```bash
