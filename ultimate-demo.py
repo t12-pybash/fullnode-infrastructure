@@ -13,13 +13,13 @@ def run_command(cmd):
         return "Error"
 
 def get_blockchain_status():
-    print("🚀 OP Stack Infrastructure Engineering Portfolio")
+    print(" OP Stack Infrastructure Engineering Portfolio")
     print("=" * 55)
     print(f"Demo Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
     
     # Show Kubernetes Infrastructure
-    print("📊 Kubernetes Infrastructure Status:")
+    print(" Kubernetes Infrastructure Status:")
     print("-" * 35)
     pods_output = run_command("kubectl get pods -n op-stack --no-headers")
     for line in pods_output.split('\n'):
@@ -29,13 +29,13 @@ def get_blockchain_status():
             status = parts[2]
             age = parts[4]
             if 'l1-ethereum' in name:
-                print(f"   🔗 L1 Ethereum Node:     {status:15} (Age: {age})")
+                print(f"    L1 Ethereum Node:     {status:15} (Age: {age})")
             elif 'l2-opstack' in name:
-                print(f"   ⚡ L2 OP Stack Node:     {status:15} (Age: {age})")
+                print(f"    L2 OP Stack Node:     {status:15} (Age: {age})")
             elif 'prometheus' in name:
-                print(f"   📊 Prometheus Monitor:   {status:15} (Age: {age})")
+                print(f"    Prometheus Monitor:   {status:15} (Age: {age})")
             elif 'grafana' in name:
-                print(f"   📈 Grafana Dashboard:    {status:15} (Age: {age})")
+                print(f"    Grafana Dashboard:    {status:15} (Age: {age})")
     print()
     
     # Test Live Blockchain RPCs
@@ -55,29 +55,29 @@ def get_blockchain_status():
                 result = response.json()
                 if 'result' in result:
                     height = int(result['result'], 16)
-                    print(f"   {name:12}: ✅ Block {height:,} (Active)")
+                    print(f"   {name:12}:  Block {height:,} (Active)")
                 else:
-                    print(f"   {name:12}: ⚠️  RPC responding, no blocks")
+                    print(f"   {name:12}:  RPC responding, no blocks")
             else:
-                print(f"   {name:12}: ❌ HTTP {response.status_code}")
+                print(f"   {name:12}: HTTP {response.status_code}")
         except Exception as e:
-            print(f"   {name:12}: ❌ Connection failed")
+            print(f"   {name:12}: Connection failed")
     
     print()
     
     # Show Infrastructure Achievements
-    print("🏆 Infrastructure Engineering Achievements:")
+    print(" Infrastructure Engineering Achievements:")
     print("-" * 43)
-    print("   ✅ 53+ hours continuous blockchain operation")
-    print("   ✅ Kubernetes StatefulSets with persistent storage")
-    print("   ✅ CI/CD pipeline with automated testing")
-    print("   ✅ Monitoring stack (Prometheus + Grafana)")
-    print("   ✅ Infrastructure as Code (Terraform + AWS)")
-    print("   ✅ Professional GitHub portfolio")
+    print("    53+ hours continuous blockchain operation")
+    print("    Kubernetes StatefulSets with persistent storage")
+    print("    CI/CD pipeline with automated testing")
+    print("    Monitoring stack (Prometheus + Grafana)")
+    print("    Infrastructure as Code (Terraform + AWS)")
+    print("    Professional GitHub portfolio")
     print()
     
     # Show Access URLs
-    print("🌐 Infrastructure Access Points:")
+    print(" Infrastructure Access Points:")
     print("-" * 31)
     print("   L1 Ethereum RPC:  http://localhost:8570")
     print("   L2 OP Stack RPC:  http://localhost:9570")
@@ -87,7 +87,7 @@ def get_blockchain_status():
     print()
     
     # Show Technical Details
-    print("⚙️  Technical Implementation:")
+    print("  Technical Implementation:")
     print("-" * 29)
     print("   • Docker containerization for development")
     print("   • Kubernetes orchestration for production")
@@ -98,9 +98,7 @@ def get_blockchain_status():
     print("   • Prometheus for metrics collection")
     print("   • Grafana for visualization dashboards")
     print()
-    
-    print("🎯 READY FOR OPTIMISM INFRASTRUCTURE ENGINEER INTERVIEW!")
-    print("=" * 55)
+    )
 
 if __name__ == '__main__':
     get_blockchain_status()
