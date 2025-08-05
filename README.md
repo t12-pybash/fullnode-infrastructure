@@ -1,17 +1,17 @@
-# Fullnode Infrastructure Engineering Portfolio
+# Fullnode Infrastructure Engineering deployment
 
 > Infrastructure automation and operational excellence for the Optimism ecosystem
 
-## 🎯 Overview
+## Overview
 This repository demonstrates production-ready infrastructure environment for OP Stack deployment, monitoring, and operations.
 
-## 🚀 Quick Start
+## Quick Start
 ```bash
 git clone https://github.com/t12-pybash/fullnode-infrastructure
 cd op-stack-x-prep
 ./scripts/setup.sh
 
-## 🚀 Kubernetes Deployment
+## Kubernetes Deployment
 
 ### Infrastructure Components
 - **Namespace**: Isolated op-stack environment
@@ -36,10 +36,11 @@ Architecture
    10.96.226.52           10.96.79.1
 Key Features
 
-Persistent storage for blockchain data
-Resource limits for predictable performance
-Service discovery between components
-Health checks and monitoring ready
-Infrastructure as Code approach
-# Infrastructure Update Fri 18 Jul 2025 13:30:01 IST
-# AWS credentials properly configured Fri 18 Jul 2025 17:47:33 IST
+**What was deployed
+
+- Persistent storage for blockchain data
+- Resource limits for predictable performance
+- Service discovery between components
+- Health checks and monitoring ready
+- Infrastructure as Code approach
+
