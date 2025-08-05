@@ -24,11 +24,11 @@ jobs:
       run: |
         echo "🔍 Validating Kubernetes manifests..."
         kubectl apply --dry-run=client -f infrastructure/kubernetes/
-        echo "✅ Kubernetes manifests are valid"
+        echo "Kubernetes manifests are valid"
 
     - name: Security check
       run: |
-        echo "🔒 Security check completed"
+        echo "Security check completed"
 
   test-kubernetes-deployment:
     name: Test K8s Deployment
@@ -45,13 +45,13 @@ jobs:
 
     - name: Deploy OP Stack to test cluster
       run: |
-        echo "🚀 Deploying OP Stack to test cluster..."
+        echo "Deploying OP Stack to test cluster..."
         cd infrastructure/kubernetes
         kubectl apply -f namespace.yaml
         kubectl apply -f l1-ethereum.yaml
-        echo "⏳ Waiting for L1 to be ready..."
+        echo "Waiting for L1 to be ready..."
         kubectl wait --for=condition=Ready pod -l app=l1-ethereum -n op-stack --timeout=180s
-        echo "✅ Deployment successful"
+        echo " Deployment successful"
 
   yaml-validation:
     name: YAML Syntax Check  
@@ -62,7 +62,7 @@ jobs:
 
     - name: Validate YAML syntax
       run: |
-        echo "📝 Validating YAML syntax..."
+        echo "Validating YAML syntax..."
         python3 -c "
 import yaml
 import os
@@ -73,9 +73,9 @@ for root, dirs, files in os.walk('infrastructure/kubernetes'):
             try:
                 with open(filepath, 'r') as f:
                     yaml.safe_load(f)
-                print(f'✅ {filepath}')
+                print(f'{filepath}')
             except Exception as e:
-                print(f'❌ {filepath}: {str(e)}')
+                print(f'{filepath}: {str(e)}')
                 exit(1)
-print('✅ All YAML files are valid')
+print('All YAML files are valid')
         "

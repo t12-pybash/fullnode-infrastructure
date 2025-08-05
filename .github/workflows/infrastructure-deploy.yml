@@ -149,24 +149,24 @@ jobs:
     
     - name: Test infrastructure health
       run: |
-        echo "🔍 Testing infrastructure health..."
+        echo " Testing infrastructure health..."
         
         # Check if pods are running
         RUNNING_PODS=$(kubectl get pods -n op-stack --field-selector=status.phase=Running --no-headers | wc -l)
-        echo "✅ Running pods: $RUNNING_PODS"
+        echo " Running pods: $RUNNING_PODS"
         
         # Check if services exist
         SERVICES=$(kubectl get services -n op-stack --no-headers | wc -l)
-        echo "✅ Services deployed: $SERVICES"
+        echo " Services deployed: $SERVICES"
         
         # Test blockchain metrics endpoint (with port-forward)
         kubectl port-forward -n op-stack svc/blockchain-metrics-final-service 8000:8000 &
         sleep 10
         
         if curl -s http://localhost:8000/metrics | grep -q blockchain_block_height; then
-          echo "✅ Blockchain metrics endpoint working"
+          echo " Blockchain metrics endpoint working"
         else
-          echo "⚠️  Blockchain metrics not ready yet"
+          echo "  Blockchain metrics not ready yet"
         fi
         
         # Test simple blockchain node
@@ -176,7 +176,7 @@ jobs:
         if curl -s -X POST -H "Content-Type: application/json" \
            --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
            http://localhost:8545 | grep -q result; then
-          echo "✅ L1 Ethereum node responding"
+          echo " L1 Ethereum node responding"
         else
-          echo "⚠️  L1 Ethereum node not ready yet"
+          echo "  L1 Ethereum node not ready yet"
         fi

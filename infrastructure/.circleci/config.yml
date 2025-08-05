@@ -41,16 +41,16 @@ jobs:
             echo "🔍 Checking AWS EKS cluster status..."
             if aws eks describe-cluster --name $EKS_CLUSTER_NAME --region $AWS_REGION >/dev/null 2>&1; then
               STATUS=$(aws eks describe-cluster --name $EKS_CLUSTER_NAME --region $AWS_REGION --query 'cluster.status' --output text)
-              echo "✅ EKS cluster exists with status: $STATUS"
+              echo " EKS cluster exists with status: $STATUS"
               
               if [ "$STATUS" = "ACTIVE" ]; then
-                echo "🎯 Cluster is ready for deployment"
+                echo " Cluster is ready for deployment"
               else
-                echo "⚠️ Cluster is not active yet (Status: $STATUS)"
+                echo " Cluster is not active yet (Status: $STATUS)"
               fi
             else
-              echo "❌ EKS cluster not found"
-              echo "💡 Run 'terraform apply' to create the cluster"
+              echo " EKS cluster not found"
+              echo " Run 'terraform apply' to create the cluster"
               exit 1
             fi
 
@@ -64,14 +64,14 @@ jobs:
       - run:
           name: Configure kubectl for EKS
           command: |
-            echo "⚙️ Configuring kubectl for EKS cluster..."
+            echo " Configuring kubectl for EKS cluster..."
             aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
             kubectl cluster-info
             kubectl get nodes
       - run:
           name: Deploy OP Stack Infrastructure
           command: |
-            echo "🚀 Deploying OP Stack to AWS EKS via CircleCI"
+            echo " Deploying OP Stack to AWS EKS via CircleCI"
             echo "=============================================="
             
             # Create namespace
@@ -83,11 +83,11 @@ jobs:
             kubectl apply -f l1-ethereum-simple.yaml || true
             kubectl apply -f infrastructure/monitoring/ || true
             
-            echo "✅ All deployment commands completed"
+            echo " All deployment commands completed"
       - run:
           name: Check Deployment Status
           command: |
-            echo "📊 Deployment Status:"
+            echo " Deployment Status:"
             kubectl get pods -n op-stack
             kubectl get services -n op-stack
             
