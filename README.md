@@ -6,7 +6,7 @@
 
 ## Background
 
-This repository reflects the infrastructure engineering approach developed over 3 years running production blockchain infrastructure at [Coin Metrics](https://coinmetrics.io) — operating fullnodes across Bitcoin, Ethereum, Solana, Optimism, and 16+ other protocols on AWS and bare metal (OVH, Equinix, Hetzner).
+This repository reflects infrastructure engineering patterns developed running production blockchain infrastructure at scale — operating fullnodes across Bitcoin, Ethereum, Solana, Optimism, and 16+ other protocols on AWS and bare metal (OVH, Equinix, Hetzner).
 
 The patterns here — StatefulSet-based node deployment, custom metrics exporters, GitOps delivery, eBPF-based networking — were developed under real production constraints: multi-petabyte chain data, high-availability requirements, and the need to reduce node deployment time from 4 hours to 15 minutes through automation.
 
@@ -81,7 +81,7 @@ A custom Python **blockchain metrics exporter** scrapes node JSON-RPC endpoints 
 - `blockchain_peer_count` — connected peers
 - `blockchain_sync_status` — sync progress
 
-Standard node exporters don't understand chain-specific state — a purpose-built exporter is necessary for meaningful blockchain observability. At Coin Metrics, this pattern was extended across 20+ protocols with custom metrics per chain (slot timing for Solana, uncle rates for Ethereum, UTXO set size for Bitcoin).
+Standard node exporters don't understand chain-specific state — a purpose-built exporter is necessary for meaningful blockchain observability. This pattern was extended across 20+ protocols in production with custom metrics per chain (slot timing for Solana, uncle rates for Ethereum, UTXO set size for Bitcoin).
 
 ---
 
