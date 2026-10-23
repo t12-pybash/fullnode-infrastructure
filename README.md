@@ -100,8 +100,8 @@ Standard node exporters don't understand chain-specific state — a purpose-buil
 ## Related Work
 
 - **[homelab-gitops](https://github.com/t12-pybash/homelab-gitops)** — 5-node bare metal k8s cluster with Cilium, GitOps, private AI platform (LiteLLM, Qdrant, Ollama), Prometheus, Falco
-- **[sre-cli](https://github.com/t12-pybash/sre-cli)** — custom SRE CLI for Kubernetes: Prometheus alerting, Alertmanager, semantic runbook search via Qdrant
+- **[argus](https://github.com/t12-pybash/argus)** — autonomous SRE agent for Kubernetes: detects failing pods, diagnoses via LLM, generates GitOps patches, deploys through Flux with Slack approval
 
 ---
 
-*Ciarán Donegan — Lead SRE | [LinkedIn](https://www.linkedin.com/in/cdonegan7/) | [t-12.io](https://t-12.io)*
+*Ciarán Donegan — Infrastructure Engineer | [LinkedIn](https://www.linkedin.com/in/cdonegan7/) | [t-12.io](https://t-12.io)*
