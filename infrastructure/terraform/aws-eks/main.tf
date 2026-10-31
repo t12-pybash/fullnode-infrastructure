@@ -96,7 +96,7 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 resource "aws_eks_cluster" "op_stack" {
   name     = "op-stack-cluster"
   role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.27"
+  version  = "1.31"
 
   vpc_config {
     subnet_ids = aws_subnet.public[*].id
