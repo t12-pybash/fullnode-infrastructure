@@ -1,18 +1,14 @@
 # Fullnode Infrastructure Engineering
 
-> Production-grade blockchain node infrastructure for the OP Stack ecosystem — built on the operational patterns used to run 20+ blockchain protocols at multi-petabyte scale.
-
----
+> Production-grade blockchain node infrastructure for the OP Stack ecosystem — built on the operational patterns used to run 20+ blockchain protocols with a large storage footprint.
 
 ## Background
 
 This repository reflects infrastructure engineering patterns developed running production blockchain infrastructure at scale — operating fullnodes across Bitcoin, Ethereum, Solana, Optimism, and 16+ other protocols on AWS and bare metal (OVH, Equinix, Hetzner).
 
-The patterns here — StatefulSet-based node deployment, custom metrics exporters, GitOps delivery, eBPF-based networking — were developed under real production constraints: multi-petabyte chain data, high-availability requirements, and the need to reduce node deployment time from 4 hours to 15 minutes through automation.
+The patterns here — StatefulSet-based node deployment, custom metrics exporters, GitOps delivery, eBPF-based networking — were developed under real production constraints: large-footprint chain data, high-availability requirements, and the need to reduce node deployment time from 4 hours to 15 minutes through automation.
 
 This implementation targets the OP Stack (Ethereum L1 + Optimism L2) as a representative case, but the architecture applies directly to any stateful blockchain workload on Kubernetes.
-
----
 
 ## Stack
 
@@ -25,8 +21,6 @@ This implementation targets the OP Stack (Ethereum L1 + Optimism L2) as a repres
 | Monitoring | Prometheus + Grafana + custom blockchain metrics exporter (Python) |
 | CI/CD | GitHub Actions (validate → plan → deploy → smoke test) + CircleCI |
 | IaC | Terraform ~1.6, `aws` provider ~5.0 |
-
----
 
 ## Architecture
 
@@ -54,11 +48,9 @@ This implementation targets the OP Stack (Ethereum L1 + Optimism L2) as a repres
 
 **AWS infrastructure (Terraform):**
 - VPC with public subnets across 2 AZs
-- EKS cluster (Kubernetes 1.27) with managed node group
+- EKS cluster (Kubernetes 1.31) with managed node group
 - IAM roles with least-privilege policies
 - Internet Gateway + route tables
-
----
 
 ## CI/CD Pipeline
 
@@ -71,8 +63,6 @@ GitHub Actions runs a 4-stage pipeline on every push to `main`:
 | `deploy-infrastructure` | Apply Terraform + deploy K8s manifests to EKS |
 | `smoke-tests` | Port-forward + curl health checks on node endpoints |
 
----
-
 ## Monitoring
 
 A custom Python **blockchain metrics exporter** scrapes node JSON-RPC endpoints and exposes Prometheus metrics:
@@ -82,8 +72,6 @@ A custom Python **blockchain metrics exporter** scrapes node JSON-RPC endpoints 
 - `blockchain_sync_status` — sync progress
 
 Standard node exporters don't understand chain-specific state — a purpose-built exporter is necessary for meaningful blockchain observability. This pattern was extended across 20+ protocols in production with custom metrics per chain (slot timing for Solana, uncle rates for Ethereum, UTXO set size for Bitcoin).
-
----
 
 ## Key Engineering Decisions
 
@@ -95,13 +83,9 @@ Standard node exporters don't understand chain-specific state — a purpose-buil
 
 **Modular Terraform** — VPC, EKS, and IAM are separated so each layer can be modified independently without full teardown. This mirrors the pattern used across multi-region bare metal and cloud deployments at scale.
 
----
-
 ## Related Work
 
 - **[homelab-gitops](https://github.com/t12-pybash/homelab-gitops)** — 5-node bare metal k8s cluster with Cilium, GitOps, private AI platform (LiteLLM, Qdrant, Ollama), Prometheus, Falco
 - **[argus](https://github.com/t12-pybash/argus)** — autonomous SRE agent for Kubernetes: detects failing pods, diagnoses via LLM, generates GitOps patches, deploys through Flux with Slack approval
-
----
 
 *Ciarán Donegan — Infrastructure Engineer | [LinkedIn](https://www.linkedin.com/in/cdonegan7/) | [t-12.io](https://t-12.io)*
